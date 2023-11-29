@@ -1,3 +1,7 @@
+import argparse
+import pickle
+import time
+
 import numpy as np
 from dash import Dash, Input, Output, callback, dcc, html
 from dash.dependencies import ALL, State
@@ -27,13 +31,14 @@ header = html.H4(
 )
 
 progress_bar = dbc.Progress(id="progress-bar", striped=True, animated=True, style={"height": "20px", "visibility": "hidden"}, value=100)
+# spinner = dbc.Spinner(size="lg", color="primary", id="loading-spinner")
 
 update_button = html.Div([dbc.Button("Update Plots", id="update-button", className="mb-3", color="primary", n_clicks=1), progress_bar])
-
 
 # Define your controls using Dash Bootstrap Components
 models = dbc.Tab([html.Div(
             [
+                # html.H4("Models"),
                 dbc.Label("Select a model"),
                 dcc.Dropdown(
                     id="model-dropdown",
@@ -66,10 +71,12 @@ models = dbc.Tab([html.Div(
 
 datasets = dbc.Tab([html.Div(
             [
+                # html.H4("Datasets"),
                 dbc.Label("Select a dataset"),
                 dcc.Dropdown(
                     id="dataset-dropdown",
                     options=[
+                        # {"label": "Mock", "value": "Mock"},
                         {"label": "LinearModel", "value": "LinearModel"},
                         {"label": "LogisticMap", "value": "LogisticMap"},
                         {"label": "LangevinTripleWell1D", "value": "LangevinTripleWell1D"},
@@ -106,6 +113,7 @@ slider1 = html.Div(
 
 slider2 = html.Div(
             [
+                # dbc.Label("T"),
                 dcc.Input(id="Tmax", type="number", placeholder="input T max"),
                 dcc.Slider(min=0, 
                            max=1, 
@@ -120,6 +128,7 @@ slider2 = html.Div(
 
 modes = dbc.Tab([html.Div(
             [
+                # dcc.Dropdown(available_modes, "All", id="modes_select"),
                 html.H4("Modes"),
                 dbc.Label("Select a mode"),
                 dcc.Dropdown(
@@ -148,13 +157,15 @@ graph1 = dbc.Col([html.Div(
                 dcc.Graph(id="eig-plot"),
                 ],
                 )], align="center", width=5)                
-
+            # style={"width": "30%", "display": "inline-block"},
+            # style={"padding": "20px", "boxShadow": "0 0 10px #ccc"},
 
 graph2 = dbc.Col([html.Div(
             [
                 html.H4("Frequency plot"),
                 dcc.Graph(id="freq-plot"),
                 ],
+                # style={"width": "49%", "display": "inline-block"},
                 )], align="center", width=7)
 
 dataset_plot = dbc.Tab([html.Div(
@@ -168,19 +179,26 @@ tab_plots = dbc.Tab(dbc.Row([graph1, graph2]), label="Plots")
 
 tabs_graphs = dbc.Card(dbc.Tabs([dataset_plot, tab_plots, modes]), body=True)
 
+# graphs = dbc.Card([graphs1])
 
 app.layout = dbc.Container(
     [
         header,
+        # html.Div(html.Img(src="https://kooplearn.readthedocs.io/en/latest/_static/logo.svg", height="120px"), 
+        #         #  className="d-flex justify-content-center"
+        #          ),
         dbc.Row([
             dbc.Col([
                 dbc.Row([
                     dbc.Col([html.Img(src="https://kooplearn.readthedocs.io/en/latest/_static/logo.svg", height="120px")], align="center"),
                     dbc.Col([update_button], align="center"),
                     ]),
+                # controls,
                 tabs_control
             ],  width=4),
             dbc.Col([tabs_graphs], width=8),
+            # dbc.Col([modes], width=7)
+            # dbc.Col([graph2], width=5),
         ]),
         html.Div(id="click-count", style={"display": "none"}, children="1"),
     ], 
@@ -245,6 +263,8 @@ def create_dataset_params(dataset_name):
 model_params = {
         'KernelDMD': [
             {'label': 'Reduced Rank', 'id': {'type': 'model-param', 'index': 'reduced_rank'}, 'type': 'checklist', 'default': True},
+            # {'label': 'Rank', 'id': {'type': 'model-param', 'index': 'rank'}, 'type': 'number', 'default': 5},
+            # {'label': 'Tikhonov Regularization', 'id': {'type': 'model-param', 'index': 'tikhonov_reg'}, 'type': 'number', 'default': None},
             {'label': 'SVD Solver', 'id': {'type': 'model-param', 'index': 'svd_solver'}, 'type': 'dropdown', 'options': ['full', 'arnoldi', 'randomized'], 'default': 'full'},
             {'label': 'Iterated Power', 'id': {'type': 'model-param', 'index': 'iterated_power'}, 'type': 'number', 'default': 1},
             # {'label': 'N Oversamples', 'id': {'type': 'model-param', 'index': 'n_oversamples'}, 'type': 'number', 'default': 5},
@@ -411,19 +431,22 @@ def main(click_count, value, Tmax, T, mode_selection, rank, tikhonov_reg, model_
         eigs = np.array([l*f(i, r) for i in range(num_features)]) 
         A = H @ (eigs * np.eye(num_features)) @ H.T 
 
-        dataset = LinearModel(A = A, noise=noise, rng_seed=rng_seed)
+        dataset = LinearModel(A = A, noise=noise, rng_seed=rng_seed)  # Replace with the actual class and parameters
+        # dataset.generate(X0 = np.zeros(A.shape[0]), T=100, rng_seed)
         _Z = dataset.sample(X0 = np.zeros(A.shape[0]), T = T_sample)
+        #PLOT(_Z)
         X = traj_to_contexts(_Z, context_window_len=context_window_len)
 
     elif selected_dataset == "LogisticMap":
         r_param=4.0
         N_param=None
         rng_seed=None
+        # time.sleep(0.05)
         if dynamic_params!=[]:
             r_param = dynamic_params[0]
             N_param = dynamic_params[1]
             rng_seed = dynamic_params[2]
-        dataset = LogisticMap(r=r_param, N=N_param, rng_seed=rng_seed)
+        dataset = LogisticMap(r=r_param, N=N_param, rng_seed=rng_seed)  # Replace with the actual class and parameters
         _Z = dataset.sample(0.2, T_sample)
         X = traj_to_contexts(_Z,  context_window_len=context_window_len)
 
@@ -432,6 +455,7 @@ def main(click_count, value, Tmax, T, mode_selection, rank, tikhonov_reg, model_
         kt=1.0
         dt=1e-4
         rng_seed=None
+        # time.sleep(0.05)
         if dynamic_params!=[]:
             gamma = dynamic_params[0]
             kt = dynamic_params[1]
@@ -448,6 +472,7 @@ def main(click_count, value, Tmax, T, mode_selection, rank, tikhonov_reg, model_
         delta=2.5
         omega=2.0
         dt=0.01
+        # time.sleep(0.05)
         if dynamic_params!=[]:
             alpha = dynamic_params[0]
             beta = dynamic_params[1]
@@ -464,6 +489,7 @@ def main(click_count, value, Tmax, T, mode_selection, rank, tikhonov_reg, model_
         mu=28
         beta=8 / 3
         dt=0.01
+        # time.sleep(0.05)
         if dynamic_params!=[]:
             sigma = dynamic_params[0]
             mu = dynamic_params[1]
@@ -475,10 +501,16 @@ def main(click_count, value, Tmax, T, mode_selection, rank, tikhonov_reg, model_
 
     fig_dataset = px.line(_Z, labels={"index":"time"})
 
+    # print(X.shape)
+    # print(X.shape[-1])
+    #selected model
     print(model_dynamic_params)
 
+    #Problem: les fonctions kernel ont besoin de parametres (par exemple: somme de x et y)
     if selected_model == "KernelDMD":
+        # Assuming the order of parameters in create_model_params function
         operator_kwargs = {'kernel': DotProduct()}
+        # time.sleep(0.05)
         if dynamic_params!=[]:
             kernel_mapping = {
             'DotProduct': DotProduct(),
@@ -487,20 +519,26 @@ def main(click_count, value, Tmax, T, mode_selection, rank, tikhonov_reg, model_
             '0.5*DotProduct + 0.5*RBF': 0.5*DotProduct() + 0.5*RBF(length_scale=model_dynamic_params[4])
         }
             operator_kwargs = {
-                'kernel': kernel_mapping.get(model_dynamic_params[3], DotProduct()),
+                'kernel': kernel_mapping.get(model_dynamic_params[3], DotProduct()), #DotProduct(),
                 'reduced_rank': model_dynamic_params[0],
+                # 'rank': model_params[2],
+                # 'tikhonov_reg': model_params[3] if model_params[3] != '' else None,  # Handle empty string for None
                 'svd_solver': model_dynamic_params[1],
                 'iterated_power': model_dynamic_params[2],
                 # 'n_oversamples': model_dynamic_params[3],
                 # 'optimal_sketching': model_dynamic_params[5],
                 'rng_seed': model_dynamic_params[5] if model_dynamic_params[5] != '' else None  # Handle empty string for None
             }
+            print(operator_kwargs)
+        # if rank is not None:
         operator_kwargs["rank"] = rank
         if tikhonov_reg is not None:
             operator_kwargs["tikhonov_reg"] = tikhonov_reg                        
         operator = KernelDMD(**operator_kwargs)
 
+    #Problem: the feature_map is generated using a predefined dataset (LinearModel), do we need to fit the model on the same dataset?
     elif selected_model == "DeepEDMD":
+        # time.sleep(0.05)
         operator_kwargs = {'feature_map': feature_map(data=X, context_window_len=context_window_len)}
         if dynamic_params!=[]:
             operator_kwargs = {
@@ -511,25 +549,29 @@ def main(click_count, value, Tmax, T, mode_selection, rank, tikhonov_reg, model_
                 # 'n_oversamples': model_dynamic_params[4],
                 'rng_seed': model_dynamic_params[4] if model_dynamic_params[4] != '' else None  # Handle empty string for None
             }
+        # if rank is not None:
         operator_kwargs["rank"] = rank
         if tikhonov_reg is not None:
             operator_kwargs["tikhonov_reg"] = tikhonov_reg    
         operator = DeepEDMD(**operator_kwargs)
 
+    #Problem: do we need to consider other feature_maps ?
     elif selected_model == "ExtendedDMD":
         FeatureMap_mapping = {
             'IdentityFeatureMap': IdentityFeatureMap(),
         }
         operator_kwargs = {}
+        # time.sleep(0.05)
         if dynamic_params!=[]:
             operator_kwargs = {
-                'feature_map': FeatureMap_mapping.get(model_dynamic_params[3], IdentityFeatureMap()),
+                'feature_map': FeatureMap_mapping.get(model_dynamic_params[3], IdentityFeatureMap()), #IdentityFeatureMap(),
                 'reduced_rank': model_dynamic_params[0],
                 'svd_solver': model_dynamic_params[1],
                 'iterated_power': model_dynamic_params[2],
                 # 'n_oversamples': model_dynamic_params[3],
                 'rng_seed': model_dynamic_params[4] if model_dynamic_params[4] != '' else None  # Handle empty string for None
             }
+        # if rank is not None:
         operator_kwargs["rank"] = rank
         if tikhonov_reg is not None:
             operator_kwargs["tikhonov_reg"] = tikhonov_reg    
@@ -537,6 +579,7 @@ def main(click_count, value, Tmax, T, mode_selection, rank, tikhonov_reg, model_
 
     elif selected_model == "DMD":
         operator_kwargs = {}
+        # time.sleep(0.05)
         if dynamic_params!=[]:
             operator_kwargs = {
                 'reduced_rank': model_dynamic_params[0],
@@ -545,11 +588,13 @@ def main(click_count, value, Tmax, T, mode_selection, rank, tikhonov_reg, model_
                 # 'n_oversamples': model_dynamic_params[3],
                 'rng_seed': model_dynamic_params[3] if model_dynamic_params[3] != '' else None  # Handle empty string for None
             }
+        # if rank is not None:
         operator_kwargs["rank"] = rank
         if tikhonov_reg is not None:
             operator_kwargs["tikhonov_reg"] = tikhonov_reg
         operator = DMD(**operator_kwargs)
 
+    # operator = KernelDMD(DotProduct(), rank=10)
     operator.fit(X)
     viz = Visualizer(koopman=operator)
     available_modes = viz.infos["eig_num"].unique().astype("str")
@@ -572,6 +617,7 @@ def main(click_count, value, Tmax, T, mode_selection, rank, tikhonov_reg, model_
         max_freq = value[1]
 
     fig_eig = viz.plot_eigs(min_freq, max_freq)
+    # print(viz) 
     fig_freqs = viz.plot_freqs(min_freq, max_freq)       
 
     if T is None:
